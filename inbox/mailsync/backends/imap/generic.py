@@ -418,21 +418,15 @@ class FolderSyncEngine(Greenlet):
             1. Do a LIST on the current folder to see what messages are on the
                 server.
             2. Compare to message uids stored locally.
-            3. Purge messages we have locally but not on the server. Ignore
-                messages we have on the server that aren't local.
+            3. Purge uids we have locally but not on the server. Ignore
+               remote uids that aren't saved locally.
 
         Make SURE to be holding `syncmanager_lock` when calling this function;
         we do not grab it here to allow callers to lock higher level
         functionality.  """
-        if len(remote_uids) > 0 and len(local_uids) > 0:
-            for elt in remote_uids:
-                assert not isinstance(elt, str)
-
         to_delete = set(local_uids) - set(remote_uids)
-        if to_delete:
-            common.remove_messages(self.account_id, db_session, to_delete,
+        common.remove_deleted_uids(self.account_id, db_session, to_delete,
                                    self.folder_name)
-        return to_delete
 
     def download_and_commit_uids(self, crispin_client, folder_name, uids):
         # Note that folder_name here might *NOT* be equal to self.folder_name,
@@ -505,7 +499,6 @@ class FolderSyncEngine(Greenlet):
         to_refresh = sorted(remote_uids &
                             local_uids)[-self.refresh_flags_max:]
         self.update_metadata(crispin_client, to_refresh)
-
 
 def uidvalidity_cb(account_id, folder_name, select_info):
     assert folder_name is not None and select_info is not None, \

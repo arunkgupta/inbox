@@ -103,5 +103,5 @@ class AutoTimestampMixin(object):
                         nullable=False, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow, nullable=False, index=True)
-    # DEPRECATED
+    # MOSTLY DEPRECATED
     deleted_at = Column(DateTime, nullable=True, index=True)

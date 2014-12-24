@@ -1,8 +1,8 @@
 from inbox.crispin import GmailFlags
 from inbox.models import Thread, Folder, Account
-from inbox.models.backends.imap import ImapUid
 from inbox.mailsync.backends.imap.common import update_metadata
-from tests.util.base import add_fake_message, add_fake_thread
+from tests.util.base import (add_fake_message, add_fake_thread,
+                             add_fake_imapuid)
 
 ACCOUNT_ID = 1
 NAMESPACE_ID = 1
@@ -22,14 +22,14 @@ def test_update_metadata(db):
     first_thread_uids = (22222, 22223)
     for msg_uid in first_thread_uids:
         message = add_fake_message(db.session, NAMESPACE_ID, first_thread)
-        uids.append(ImapUid(account_id=ACCOUNT_ID, message=message,
-                            msg_uid=msg_uid, folder=folder))
+        uids.append(add_fake_imapuid(db.session, ACCOUNT_ID, message, msg_uid,
+                                     '[Gmail]/All Mail'))
 
     second_thread_uids = (22224, 22226)
     for msg_uid in second_thread_uids:
         message = add_fake_message(db.session, NAMESPACE_ID, second_thread)
-        uids.append(ImapUid(account_id=ACCOUNT_ID, message=message,
-                            msg_uid=msg_uid, folder=folder))
+        uids.append(add_fake_imapuid(db.session, ACCOUNT_ID, message, msg_uid,
+                                     '[Gmail]/All Mail'))
     db.session.add_all(uids)
     db.session.commit()
 
@@ -53,10 +53,8 @@ def test_unread_and_draft_tags_applied(db):
     folder = db.session.query(Folder).filter(
         Folder.account_id == ACCOUNT_ID,
         Folder.name == '[Gmail]/All Mail').one()
-    uid = ImapUid(account_id=ACCOUNT_ID, message=message,
-                  msg_uid=msg_uid, folder=folder)
-    db.session.add(uid)
-    db.session.commit()
+    add_fake_imapuid(db.session, ACCOUNT_ID, message, 22222,
+                     '[Gmail]/All Mail')
 
     update_metadata(ACCOUNT_ID, db.session, folder.name, folder.id, [msg_uid],
                     {msg_uid: GmailFlags((u'\\Seen',), (u'\\Draft',))})
@@ -82,9 +80,8 @@ def test_gmail_label_sync(db):
         db.session.delete(account.important_folder)
     thread = db.session.query(Thread).get(1)
     message = add_fake_message(db.session, NAMESPACE_ID, thread)
-    db.session.add(ImapUid(account_id=ACCOUNT_ID, message=message,
-                           msg_uid=22222, folder=folder))
-    db.session.commit()
+    add_fake_imapuid(db.session, ACCOUNT_ID, message, 22222,
+                     '[Gmail]/All Mail')
 
     # Note that IMAPClient parses numeric labels into integer types. We have to
     # correctly handle those too.

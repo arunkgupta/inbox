@@ -342,3 +342,18 @@ def add_fake_thread(db_session, namespace_id):
     db_session.add(thr)
     db_session.commit()
     return thr
+
+
+def add_fake_imapuid(db_session, account_id, message, msg_uid, folder_name):
+    from inbox.models import Folder
+    from inbox.models.backends.imap import ImapUid
+    folder = db_session.query(Folder).filter(
+        Folder.account_id == account_id,
+        Folder.name == folder_name).one()
+    imapuid = ImapUid(account_id=account_id,
+                      message=message,
+                      folder=folder,
+                      msg_uid=msg_uid)
+    db_session.add(imapuid)
+    db_session.commit()
+    return imapuid
